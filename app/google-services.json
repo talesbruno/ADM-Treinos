@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "787208538872",
+    "project_id": "teste-tecnico-lealapps",
+    "storage_bucket": "teste-tecnico-lealapps.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:787208538872:android:9be82ab00ce7c5089f490d",
+        "android_client_info": {
+          "package_name": "com.example.teste_tecnico_lealapps"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKtS0ESc8D3iGVMktnZtmZimQPQK3hde8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
