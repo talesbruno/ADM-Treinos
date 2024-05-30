@@ -1,6 +1,7 @@
 package com.example.teste_tecnico_lealapps.presentation
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,11 +11,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,16 +30,44 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.teste_tecnico_lealapps.presentation.viewmodels.SignInViewModel
 import com.example.teste_tecnico_lealapps.ui.theme.TestetecnicoLealAppsTheme
+import com.example.teste_tecnico_lealapps.utils.Result
+import com.example.teste_tecnico_lealapps.utils.SignInFormEvent
 
 @Composable
 fun SignUpScreen(
     signInViewModel: SignInViewModel,
     modifier: Modifier = Modifier,
+    onNavigateToHomeAccount: () -> Unit,
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val state = signInViewModel.stateSignUp
+    val signUpState by signInViewModel.signUpResult.collectAsStateWithLifecycle()
+    when(signUpState){
+        is Result.Error -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "Erro ao cadastrar")
+            }
+        }
+        is Result.Initial -> {
+
+        }
+        is Result.Loading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        is Result.Success -> {
+            onNavigateToHomeAccount()
+        }
+    }
     Column(
         modifier
             .padding(20.dp)
@@ -53,26 +84,34 @@ fun SignUpScreen(
         )
         Spacer(modifier = Modifier.size(16.dp))
         OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
+            value = state.email,
+            onValueChange = { signInViewModel.onEventSignUp(SignInFormEvent.EmailChanged(it)) },
             label = { Text(text = "E-mail") },
+            isError = state.emailError != null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
         )
+        if (state.passwordError != null) {
+            Text(
+                text = state.passwordError,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
         OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
+            value = state.password,
+            onValueChange = { signInViewModel.onEventSignUp(SignInFormEvent.PasswordChanged(it)) },
             label = { Text(text = "Password") },
+            isError = state.passwordError != null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text(text = "Password") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
-        )
+        if (state.passwordError != null) {
+            Text(
+                text = state.passwordError,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
         Spacer(modifier = Modifier.size(16.dp))
         Button(
-            onClick = { signInViewModel.signUp(email, password)}
+            onClick = { signInViewModel.onEventSignUp(SignInFormEvent.Submit)}
         ) {
             Icon(imageVector = Icons.Default.Done, contentDescription = null)
             Spacer(modifier = Modifier.size(5.dp))

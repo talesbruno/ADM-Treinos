@@ -29,6 +29,7 @@ import com.example.teste_tecnico_lealapps.Graph
 import com.example.teste_tecnico_lealapps.presentation.viewmodels.SignInViewModel
 import com.example.teste_tecnico_lealapps.ui.theme.TestetecnicoLealAppsTheme
 import com.example.teste_tecnico_lealapps.utils.Result
+import com.example.teste_tecnico_lealapps.utils.SignInFormEvent
 
 @Composable
 fun SignInScreen(
@@ -38,8 +39,7 @@ fun SignInScreen(
     onNavigateToPlashAccount: () -> Unit,
     onNavigateToCreateAccount: () -> Unit,
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val state = signInViewModel.state
     val signInState by signInViewModel.isUserAuthenticated.collectAsStateWithLifecycle()
     LaunchedEffect(signInState) {
         if (signInState.isAuthenticated) {
@@ -60,19 +60,33 @@ verticalArrangement = Arrangement.Center
     )
     Spacer(modifier = Modifier.size(16.dp))
     OutlinedTextField(
-        value = email,
-        onValueChange = { email = it },
+        value = state.email,
+        onValueChange = { signInViewModel.onEvent(SignInFormEvent.EmailChanged(it))},
         label = { Text(text = "E-mail") },
+        isError = state.emailError != null,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
     )
+    if (state.emailError != null) {
+        Text(
+            text = state.emailError,
+            color = MaterialTheme.colorScheme.error,
+        )
+    }
     OutlinedTextField(
-        value = password,
-        onValueChange = { password = it },
+        value = state.password,
+        onValueChange = { signInViewModel.onEvent(SignInFormEvent.PasswordChanged(it))},
+        isError = state.passwordError != null,
         label = { Text(text = "Password") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
     )
+    if (state.passwordError != null) {
+        Text(
+            text = state.passwordError,
+            color = MaterialTheme.colorScheme.error,
+        )
+    }
     Spacer(modifier = Modifier.size(16.dp))
-    Button(onClick = { signInViewModel.signIn(email, password) }) {
+    Button(onClick = { signInViewModel.onEvent(SignInFormEvent.Submit) }) {
         Text(text = "Login")
     }
     Spacer(modifier = Modifier.size(16.dp))

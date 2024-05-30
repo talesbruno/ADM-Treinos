@@ -28,7 +28,10 @@ fun NavGraphBuilder.authGraph(
             )
         }
         composable(route = AuthScreenRout.SignUp.route) {
-            SignUpScreen(signInViewModel)
+            SignUpScreen(
+                signInViewModel,
+                onNavigateToHomeAccount = onNavigateToHomeAccount,
+            )
         }
     }
 }

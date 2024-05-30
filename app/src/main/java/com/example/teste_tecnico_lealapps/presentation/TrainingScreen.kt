@@ -54,6 +54,7 @@ fun TrainingScreen(
     onNavigateToCreateExerciseScreen: (String) -> Unit,
     trainingViewModel: TrainingViewModel
 ) {
+    val exercisesResult by trainingViewModel.exercises.collectAsStateWithLifecycle()
     val trainingList by trainingViewModel.training.collectAsStateWithLifecycle()
     val findTraining = trainingList.data?.find {
         it.uuid == trainingUuid
@@ -61,7 +62,6 @@ fun TrainingScreen(
     LaunchedEffect(trainingUuid) {
         trainingViewModel.getAllExercises(trainingUuid)
     }
-    val exercisesResult by trainingViewModel.exercises.collectAsStateWithLifecycle()
     when (val result = exercisesResult) {
         is Result.Loading -> {
             Box(

@@ -78,7 +78,7 @@ class TrainingViewModel @Inject constructor(
 
     fun deleteExercise(exercise: Exercise) {
         viewModelScope.launch {
-            _deleteTraining.value = trainingRepository.deleteExercises(exercise)
+            _deleteExercise.value = trainingRepository.deleteExercises(exercise)
         }
     }
 
