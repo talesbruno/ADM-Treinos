@@ -17,6 +17,7 @@ import com.example.teste_tecnico_lealapps.utils.SignInFormEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,17 +27,17 @@ class SignInViewModel @Inject constructor(
     private val authRepository: AuthRepository,
 ) : ViewModel() {
 
-    var state by mutableStateOf(SignInFormState())
+    var stateSignIn by mutableStateOf(SignInFormState())
     var stateSignUp by mutableStateOf(SignUpFormState())
-
-    private val _signUpResult = MutableStateFlow<Result<FirebaseUser>>(Result.Initial())
-    val signUpResult: StateFlow<Result<FirebaseUser>> = _signUpResult
-
-    private val _signInResult = MutableStateFlow<Result<FirebaseUser>>(Result.Initial())
-    val signInResult: StateFlow<Result<FirebaseUser>> = _signInResult
 
     private val _isUserAuthenticated = MutableStateFlow(UserDto())
     val isUserAuthenticated: StateFlow<UserDto> = _isUserAuthenticated
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
+
+    private val _isError = MutableStateFlow("")
+    val isError = _isError.asStateFlow()
 
     init {
         checkUserOnlineStatus()
@@ -46,7 +47,26 @@ class SignInViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.signUp(email, password)
                 .collect { result ->
-                    _signUpResult.value = result
+                    when (result){
+                        is Result.Error -> {
+                            val error = result.message
+                            _isLoading.value = false
+                            if (error != null) {
+                                _isError.value = error
+                            }
+                        }
+                        is Result.Initial -> {
+
+                        }
+                        is Result.Loading -> {
+                            _isLoading.value = true
+                        }
+                        is Result.Success -> {
+                            val user = result.data
+                            _isLoading.value = false
+                            _isUserAuthenticated.value = user?.email?.let { UserDto(true, it) }!!
+                        }
+                    }
                 }
         }
     }
@@ -55,10 +75,25 @@ class SignInViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.signIn(email, password)
                 .collect { result ->
-                    _signInResult.value = result
-                    if (result is Result.Success) {
-                        val user = result.data
-                        _isUserAuthenticated.value = user?.email?.let { UserDto(true, it) }!!
+                    when (result) {
+                        is Result.Error -> {
+                            val error = result.message
+                            _isLoading.value = false
+                            if (error != null) {
+                                _isError.value = error
+                            }
+                        }
+                        is Result.Initial -> {
+
+                        }
+                        is Result.Loading -> {
+                            _isLoading.value = true
+                        }
+                        is Result.Success -> {
+                            val user = result.data
+                            _isLoading.value = false
+                            _isUserAuthenticated.value = user?.email?.let { UserDto(true, it) }!!
+                        }
                     }
                 }
         }
@@ -84,11 +119,11 @@ class SignInViewModel @Inject constructor(
     fun onEvent(event: SignInFormEvent) {
         when (event) {
             is SignInFormEvent.EmailChanged -> {
-                state = state.copy(email = event.email)
+                stateSignIn = stateSignIn.copy(email = event.email)
             }
 
             is SignInFormEvent.PasswordChanged -> {
-                state = state.copy(password = event.password)
+                stateSignIn = stateSignIn.copy(password = event.password)
             }
 
             is SignInFormEvent.Submit -> {
@@ -114,10 +149,19 @@ class SignInViewModel @Inject constructor(
     }
 
     private fun submitSignIn() {
-        val emailResult = validateEmail(state.email)
-        val passwordResult = validatePassword(state.password)
+        val emailResult = validateEmail(stateSignIn.email)
+        val passwordResult = validatePassword(stateSignIn.password)
         if (emailResult && passwordResult) {
-            signIn(state.email, state.password)
+            stateSignIn = stateSignIn.copy(
+                emailError = null,
+                passwordError = null
+            )
+            signIn(stateSignIn.email, stateSignIn.password)
+        } else {
+            stateSignIn = stateSignIn.copy(
+                emailError = "Email inválido",
+                passwordError = "Senha deve ter pelo menos 6 caracteres"
+            )
         }
     }
 
@@ -125,29 +169,24 @@ class SignInViewModel @Inject constructor(
         val emailResult = validateEmail(stateSignUp.email)
         val passwordResult = validatePassword(stateSignUp.password)
         if (emailResult && passwordResult) {
+            stateSignUp = stateSignUp.copy(
+                emailError = null,
+                passwordError = null
+            )
             signUp(stateSignUp.email, stateSignUp.password)
+        } else {
+            stateSignUp = stateSignUp.copy(
+                emailError = "Email inválido",
+                passwordError = "Senha deve ter pelo menos 6 caracteres"
+            )
         }
     }
 
     private fun validateEmail(email: String): Boolean {
-        return if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            state = state.copy(emailError = "Email inválido")
-            stateSignUp = stateSignUp.copy(emailError = "Email inválido")
-            false
-        } else {
-            state = state.copy(emailError = null)
-            true
-        }
+        return !(email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches())
     }
 
     private fun validatePassword(password: String): Boolean {
-        return if (password.length < 6) {
-            state = state.copy(passwordError = "Senha deve ter pelo menos 6 caracteres")
-            stateSignUp = stateSignUp.copy(passwordError = "Senha deve ter pelo menos 6 caracteres")
-            false
-        } else {
-            state = state.copy(passwordError = null)
-            true
-        }
+        return password.length >= 6
     }
 }

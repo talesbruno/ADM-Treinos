@@ -15,6 +15,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,79 +46,77 @@ fun SignUpScreen(
     onNavigateToHomeAccount: () -> Unit,
 ) {
     val state = signInViewModel.stateSignUp
-    val signUpState by signInViewModel.signUpResult.collectAsStateWithLifecycle()
-    when(signUpState){
-        is Result.Error -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "Erro ao cadastrar")
-            }
-        }
-        is Result.Initial -> {
-
-        }
-        is Result.Loading -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        }
-        is Result.Success -> {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val signInState by signInViewModel.isUserAuthenticated.collectAsStateWithLifecycle()
+    LaunchedEffect(signInState) {
+        if (signInState.isAuthenticated) {
             onNavigateToHomeAccount()
         }
     }
-    Column(
-        modifier
-            .padding(20.dp)
-            .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    val loading by signInViewModel.isLoading.collectAsStateWithLifecycle()
+    if (loading) {
+        SplashScreen()
+    }
+    val error by signInViewModel.isError.collectAsStateWithLifecycle()
+    LaunchedEffect(error) {
+        if (error.isNotEmpty()) {
+            val result = snackbarHostState.showSnackbar(
+                error, "Ok"
+            )
+        }
+    }
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) {
-        Text(
-            text = "Crie sua Conta preechendo os campos",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.size(16.dp))
-        OutlinedTextField(
-            value = state.email,
-            onValueChange = { signInViewModel.onEventSignUp(SignInFormEvent.EmailChanged(it)) },
-            label = { Text(text = "E-mail") },
-            isError = state.emailError != null,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
-        )
-        if (state.passwordError != null) {
-            Text(
-                text = state.passwordError,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
-        OutlinedTextField(
-            value = state.password,
-            onValueChange = { signInViewModel.onEventSignUp(SignInFormEvent.PasswordChanged(it)) },
-            label = { Text(text = "Password") },
-            isError = state.passwordError != null,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
-        )
-        if (state.passwordError != null) {
-            Text(
-                text = state.passwordError,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
-        Spacer(modifier = Modifier.size(16.dp))
-        Button(
-            onClick = { signInViewModel.onEventSignUp(SignInFormEvent.Submit)}
+        Column(
+            modifier
+                .padding(it)
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Icon(imageVector = Icons.Default.Done, contentDescription = null)
-            Spacer(modifier = Modifier.size(5.dp))
-            Text(text = "Cadastrar")
+            Text(
+                text = "Crie sua Conta preechendo os campos",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.size(16.dp))
+            OutlinedTextField(
+                value = state.email,
+                onValueChange = { signInViewModel.onEventSignUp(SignInFormEvent.EmailChanged(it)) },
+                label = { Text(text = "E-mail") },
+                isError = state.emailError != null,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+            )
+            if (state.emailError != null) {
+                Text(
+                    text = state.emailError,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            OutlinedTextField(
+                value = state.password,
+                onValueChange = { signInViewModel.onEventSignUp(SignInFormEvent.PasswordChanged(it)) },
+                label = { Text(text = "Password") },
+                isError = state.passwordError != null,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+            )
+            if (state.passwordError != null) {
+                Text(
+                    text = state.passwordError,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            Spacer(modifier = Modifier.size(16.dp))
+            Button(
+                onClick = { signInViewModel.onEventSignUp(SignInFormEvent.Submit) }
+            ) {
+                Icon(imageVector = Icons.Default.Done, contentDescription = null)
+                Spacer(modifier = Modifier.size(5.dp))
+                Text(text = "Cadastrar")
+            }
         }
     }
 }

@@ -61,6 +61,8 @@ import com.example.teste_tecnico_lealapps.ui.theme.Pink80
 import com.example.teste_tecnico_lealapps.ui.theme.Purple40
 import com.example.teste_tecnico_lealapps.ui.theme.Purple80
 import com.example.teste_tecnico_lealapps.ui.theme.PurpleGrey80
+import com.example.teste_tecnico_lealapps.utils.SignInFormEvent
+import com.example.teste_tecnico_lealapps.utils.TrainingFormEvent
 import java.text.SimpleDateFormat
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -74,12 +76,9 @@ fun CreateTrainingScreen(
     onPopBackStack: () -> Boolean,
     modifier: Modifier = Modifier,
 ) {
-    var name by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var selectedCustomFormattedDate by remember { mutableStateOf("") }
-    var selectedCustomFormattedTime by remember { mutableStateOf("") }
+    val state = trainingViewModel.stateTrainingForm
+
     val customDateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
-    val customTimeFormat = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
     val datePickerState = rememberDatePickerState()
     var showDatePicker by remember { mutableStateOf(false) }
     val timePickerState = rememberTimePickerState()
@@ -91,8 +90,7 @@ fun CreateTrainingScreen(
                 TextButton(
                     onClick = {
                         showDatePicker = false
-                        selectedCustomFormattedDate =
-                            customDateFormat.format(datePickerState.selectedDateMillis)
+                        trainingViewModel.onEventForm(TrainingFormEvent.DateChanged(customDateFormat.format(datePickerState.selectedDateMillis)))
                     }
                 ) { Text("OK") }
             },
@@ -126,8 +124,7 @@ fun CreateTrainingScreen(
                         showTimePicker = false
                         val selectedTime =
                             LocalTime.of(timePickerState.hour, timePickerState.minute)
-                        selectedCustomFormattedTime =
-                            selectedTime.format(DateTimeFormatter.ofPattern("hh:mm a"))
+                        trainingViewModel.onEventForm(TrainingFormEvent.DateChanged(selectedTime.format(DateTimeFormatter.ofPattern("hh:mm a"))))
                     }
                 ) { Text("OK") }
             },
@@ -168,19 +165,31 @@ fun CreateTrainingScreen(
         )
         Spacer(modifier = Modifier.size(16.dp))
         OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
+            value = state.name,
+            onValueChange = { trainingViewModel.onEventForm(TrainingFormEvent.NameChanged(it)) },
             label = { Text(text = "Nome do Treino") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
         )
+        if (state.nameError != null) {
+            Text(
+                text = state.nameError,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
         OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
+            value = state.description,
+            onValueChange = { trainingViewModel.onEventForm(TrainingFormEvent.DescriptionChanged(it))  },
             label = { Text(text = "Descrição") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
         )
+        if (state.descriptionError != null) {
+            Text(
+                text = state.descriptionError,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
         OutlinedTextField(
-            value = selectedCustomFormattedDate,
+            value = state.date,
             onValueChange = {},
             label = { Text(text = "Selecionar Data") },
             trailingIcon = {
@@ -194,8 +203,14 @@ fun CreateTrainingScreen(
             },
             readOnly = true
         )
+        if (state.dateError != null) {
+            Text(
+                text = state.dateError,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
         OutlinedTextField(
-            value = selectedCustomFormattedTime,
+            value = state.time,
             onValueChange = {},
             label = { Text(text = "Selecionar Hora") },
             trailingIcon = {
@@ -209,18 +224,16 @@ fun CreateTrainingScreen(
             },
             readOnly = true
         )
+        if (state.timeError != null) {
+            Text(
+                text = state.timeError,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
         Spacer(modifier = Modifier.size(16.dp))
         Button(
             onClick = {
-                trainingViewModel.insertTraining(
-                    Training(
-                        null,
-                        null,
-                        name,
-                        description,
-                        "$selectedCustomFormattedDate, $selectedCustomFormattedTime"
-                    )
-                )
+                trainingViewModel.onEventForm(TrainingFormEvent.Submit)
                 onPopBackStack()
             }
         ) {
